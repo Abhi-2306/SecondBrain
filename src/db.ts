@@ -3,12 +3,20 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const connectDB = async () => {
-    if (!process.env.MONGODB_URI) {
-        throw new Error("MONGODB_URI is not defined");
-    }
-    await mongoose.connect(process.env.MONGODB_URI);
-}
+    try {
+        if (!process.env.MONGODB_URI) {
+            console.error("Error: MONGODB_URI is not defined in .env");
+            process.exit(1);
+        }
 
+        await mongoose.connect(process.env.MONGODB_URI);
+
+        console.log("Connected to MongoDB");
+    } catch (error) {
+        console.error("MongoDB connection error:", error);
+        process.exit(1);
+    }
+};
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -22,15 +30,13 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+export const User = mongoose.model("User", userSchema);
 
 const tagSchema = new mongoose.Schema({
     title: { type: String, required: true, unique: true }
 });
 
-const Tag = mongoose.model("Tag", tagSchema);
-module.exports = Tag;
+export const Tag = mongoose.model("Tag", tagSchema);
 
 const contentTypes = ['image', 'video', 'article', 'audio'];
 
@@ -42,8 +48,7 @@ const contentSchema = new mongoose.Schema({
     userId: { type: Types.ObjectId, ref: 'User', required: true },
 });
 
-const Content = mongoose.model("Content", contentSchema);
-module.exports = Content;
+export const Content = mongoose.model("Content", contentSchema);
 
 
 const linkSchema = new mongoose.Schema({
@@ -51,5 +56,4 @@ const linkSchema = new mongoose.Schema({
     userId: { type: Types.ObjectId, ref: 'User', required: true },
 });
 
-const Link = mongoose.model("Link", linkSchema);
-module.exports = Link;
+export const Link = mongoose.model("Link", linkSchema);
