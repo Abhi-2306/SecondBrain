@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
 declare global {
@@ -9,15 +9,17 @@ declare global {
     }
 }
 
-export const userMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const token = req.headers["authorization"] as string | undefined;
-        if (!token) return res.status(401).json({ message: "No token available" });
-        if (!process.env.JWT_TOKEN) return res.status(401).json({ message: "No jwt secret key" });
-        const decoded = jwt.verify(token, process.env.JWT_TOKEN as string);
-        req.user = decoded;
+export const userMiddleware: RequestHandler = (req, res, next) => {
+
+    const header = req.headers["authorization"] as string | undefined;
+    console.log("hiii");
+    
+    const decoded = jwt.verify(header as string, process.env.JWT_TOKEN as string);
+    if (decoded && typeof decoded === 'object') {
+        //@ts-ignore
+        req.userId = decoded.userId;        
         next();
-    } catch (e) {
-        res.status(403).json({ message: "Invalid Token" });
+    } else {
+        res.status(403).json({message: "User is not logged in"})
     }
 }

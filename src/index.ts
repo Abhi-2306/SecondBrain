@@ -1,9 +1,10 @@
 import express, { RequestHandler } from "express";
 import mongoose from "mongoose";
-import { connectDB, User } from "./db";
+import { connectDB, Content, User } from "./db";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt';
 import generateToken from "./utils/jwt";
+import { userMiddleware } from "./middleware";
 
 
 dotenv.config();
@@ -82,8 +83,22 @@ app.post("/api/v1/signin",(async (req, res) => {
     }
 })as RequestHandler)
 
-app.post("/api/v1/content",(async (req, res) => {
+app.post("/api/v1/content", userMiddleware, (async (req, res) => {
     
+    const { link, type, title } = req.body;
+    const content = new Content(
+        {
+            link: link,
+            type: type,
+            title: title,
+            //@ts-ignore
+            userId: req.userId,
+            tags: []
+        }
+    )
+    await content.save();
+    res.status(200).json({ message:"Content added Successfully"});
+
 }) as RequestHandler)
 
 app.get("/api/v1/content", (req, res) => {
