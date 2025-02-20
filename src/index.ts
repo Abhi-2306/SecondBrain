@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { connectDB, User } from "./db";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt';
+import generateToken from "./utils/jwt";
+
 
 dotenv.config();
 
@@ -47,13 +49,42 @@ app.post("/api/v1/signup", (async (req, res) => {
     }
 }) as RequestHandler)
 
-app.post("/api/v1/signin", (req, res) => {
+app.post("/api/v1/signin",(async (req, res) => {
+    try {
+        const { username, password } = req.body;
 
-})
+        if (username.length < 3 || username.length > 10) {
+            return res.status(411).json({ message: "Username length should be 3-10 characters long" });
+        }
 
-app.post("/api/v1/content", (req, res) => {
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(403).json({ message: "User doesn't exit" });
+        }
+        
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-})
+        if (!isPasswordValid) {
+            return res.status(403).json({ message: "Invalid Password" });
+        }
+
+        const token = generateToken(user._id.toString());
+        
+        res.cookie("jwt", token, {
+            httpOnly: true,   
+            expires: new Date(Date.now() + 3600000),
+        });
+        res.status(200).json({ message: "Login Successful" });
+
+    }
+    catch (e) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+})as RequestHandler)
+
+app.post("/api/v1/content",(async (req, res) => {
+    
+}) as RequestHandler)
 
 app.get("/api/v1/content", (req, res) => {
 
