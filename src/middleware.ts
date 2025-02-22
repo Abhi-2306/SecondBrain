@@ -12,7 +12,6 @@ declare global {
 export const userMiddleware: RequestHandler = (req, res, next) => {
 
     const header = req.headers["authorization"] as string | undefined;
-    console.log("hiii");
     
     const decoded = jwt.verify(header as string, process.env.JWT_TOKEN as string);
     if (decoded && typeof decoded === 'object') {

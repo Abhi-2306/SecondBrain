@@ -1,10 +1,11 @@
 import express, { RequestHandler } from "express";
 import mongoose from "mongoose";
-import { connectDB, Content, User } from "./db";
+import { connectDB, Content, Link, User } from "./db";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt';
 import generateToken from "./utils/jwt";
 import { userMiddleware } from "./middleware";
+import { random } from "./utils/random";
 
 
 dotenv.config();
@@ -116,15 +117,71 @@ app.delete("/api/v1/content/", (req, res) => {
         //@ts-ignore
         userId:req.userId
     })
-    res.json({message:"Content Deleted Successfully"})
+    res.status(200).json({message:"Content Deleted Successfully"})
 })
 
-app.post("/api/v1/brain/share", (req, res) => {
+app.post("/api/v1/brain/share", userMiddleware, async (req, res) => {
+    const { share } = req.body;
+    if (share) {
+        const isLinkExists = await Link.findOne({
+            //@ts-ignore
+            userId: req.userId
+        })
 
+        if (isLinkExists) {
+            res.status(200).json({
+                hash: isLinkExists.hash
+            })
+            return;
+        }
+
+        if (share) {
+            const hash = random(10);
+            const link = new Link({
+                //@ts-ignore
+                userId: req.userId,
+                hash: hash,
+            })
+            await link.save();
+            res.status(200).json({
+                hash: hash
+            })
+        } else {
+            Link.deleteMany({
+                //@ts-ignore
+                userId: req.userId
+            })
+            res.status(200).json({
+                message: "Removed Link"
+            })
+        }
+    }
+    
+    res.status(411).json({ message: "Invalid Input" });
 })
 
-app.get("/api/v1/brain/:shareLink", (req, res) => {
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+    const hash = req.params.shareLink;
+    const link = await Link.findOne({
+        hash
+    })
+    if (!link) {
+        res.status(411).json({ message: "Invalid Input" })
+        return;
+    }
 
+    const content = await Content.findOne({
+        userId: link.userId
+    })
+
+    const user = await User.findOne({
+        _id: link.userId
+    })
+
+    res.status(200).json({
+        username: user?.username,
+        content: content
+    });
 })
 
 app.listen(3000, () => {
